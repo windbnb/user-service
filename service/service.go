@@ -77,6 +77,38 @@ func (service *UserService) FindUser(userId uint64) (model.User, error) {
 	return userToUpdate, nil
 }
 
+func (service *UserService) DeleteUser(userId uint64) error {
+	userToDelete, err := service.Repo.FindUserById(userId)
+
+	if err != nil {
+		return err
+	}
+
+	userIsHost := false
+	if userToDelete.Role == model.GUEST {
+		// CHECK IF GUEST HAS ACTIVE RESERVATIONS
+	} else if userToDelete.Role == model.HOST {
+		userIsHost = true
+		// CHECK IF HOST HAS ACTIVE FUTURE RESERVATIONS
+	}
+
+	err = service.Repo.DeleteUser(userId)
+
+	if err != nil {
+		return err
+	}
+
+	if userIsHost {
+		// DELETE ALL USER ACCOMODATION
+		err = nil
+		if err != nil {
+			service.Repo.SaveUserDeletionEvent(userId)
+		}
+	}
+
+	return nil
+}
+
 func (service *UserService) EditUser(user model.UserDTO, userId uint64) error {
 	userToUpdate, err := service.Repo.FindUserById(userId)
 

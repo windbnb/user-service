@@ -116,3 +116,19 @@ func (handler *Handler) FindUser(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(user.ToDTO())
 }
+
+func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	userId, _ := strconv.ParseUint(params["id"], 10, 32)
+
+	err := handler.Service.DeleteUser(userId)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusBadRequest})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

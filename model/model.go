@@ -25,3 +25,8 @@ type User struct {
 func (user *User) ToDTO() UserDTO {
 	return UserDTO{Id: user.ID, Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address, Username: user.Username}
 }
+
+type UserDeletionEvent struct {
+	gorm.Model
+	UserId uint64 `gorm:"not null;default:null"`
+}
