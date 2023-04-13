@@ -19,6 +19,16 @@ func (user *UserDTO) ToUser() User {
 	return User{Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address}
 }
 
+type UserResponseDTO struct {
+	Id      uint   `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+	Address string `json:"address"`
+	Username string `json:"username"`
+	Role UserRole `json:"role"`
+}
+
 type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`

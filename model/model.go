@@ -4,11 +4,11 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type UserRole int
+type UserRole string
 
 const (
-	HOST  UserRole = 0
-	GUEST UserRole = 1
+	HOST  UserRole = "HOST"
+	GUEST UserRole = "GUEST"
 )
 
 type User struct {
@@ -22,8 +22,8 @@ type User struct {
 	Role UserRole
 }
 
-func (user *User) ToDTO() UserDTO {
-	return UserDTO{Id: user.ID, Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address, Username: user.Username}
+func (user *User) ToDTO() UserResponseDTO {
+	return UserResponseDTO{Id: user.ID, Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address, Username: user.Username, Role: user.Role}
 }
 
 type UserDeletionEvent struct {
