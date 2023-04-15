@@ -28,7 +28,9 @@ func ConnectToDatabase() *gorm.DB {
 	}
 
 	db.DropTable("users")
+	db.DropTable("user_deletion_events")
 	db.AutoMigrate(&model.User{})
+	db.AutoMigrate(&model.UserDeletionEvent{})
 
 	for _, user := range users {
 		db.Create(&user)

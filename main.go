@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,9 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/robfig/cron/v3"
+	"github.com/windbnb/user-service/cronUtil"
 	handler "github.com/windbnb/user-service/handler"
-	model "github.com/windbnb/user-service/model"
 	repository "github.com/windbnb/user-service/repository"
 	router "github.com/windbnb/user-service/router"
 	service "github.com/windbnb/user-service/service"
@@ -25,21 +23,7 @@ func main() {
 
 	db := util.ConnectToDatabase()
 	router := router.ConfigureRouter(&handler.Handler{Service: &service.UserService{ Repo: &repository.Repository{Db: db}}})
-	cronHandler := cron.New()
-	cronHandler.AddFunc("@hourly", func() {
-		var userDeletionRequests []model.UserDeletionEvent
-		db.Find(&userDeletionRequests)
-
-		for _, userDeletionRequest := range userDeletionRequests {
-			userId := userDeletionRequest.UserId
-			fmt.Println(userId)
-			// TODO: send request to delete user
-			err := error(nil)
-			if err == nil {
-				db.Delete(userDeletionRequest)
-			}
-		}
-	})
+	cronUtil.ConfigureCronJobs(db)
 
 	srv := &http.Server{Addr: "localhost:8081", Handler: router}
 	go func() {

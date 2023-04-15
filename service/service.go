@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/windbnb/user-service/client"
 	"github.com/windbnb/user-service/model"
 	"github.com/windbnb/user-service/repository"
 )
@@ -99,8 +100,7 @@ func (service *UserService) DeleteUser(userId uint64) error {
 	}
 
 	if userIsHost {
-		// DELETE ALL USER ACCOMODATION
-		err = nil
+		err = client.DeleteAccomodationForHost(uint(userId))
 		if err != nil {
 			service.Repo.SaveUserDeletionEvent(userId)
 		}
