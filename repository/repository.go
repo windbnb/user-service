@@ -56,6 +56,17 @@ func (r *Repository) SaveUser(user model.User) (model.User, error) {
 	return user, nil
 }
 
-func (r *Repository) DeleteUser() {
+func (r *Repository) SaveUserDeletionEvent(userId uint64) {
+	r.Db.Save(&model.UserDeletionEvent{UserId: userId})
+}
 
+func (r *Repository) DeleteUser(userId uint64) error {
+	userToDelete, err := r.FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	r.Db.Delete(userToDelete)
+
+	return nil
 }

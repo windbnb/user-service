@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/windbnb/user-service/client"
 	"github.com/windbnb/user-service/model"
 	"github.com/windbnb/user-service/repository"
 )
@@ -75,6 +76,41 @@ func (service *UserService) FindUser(userId uint64) (model.User, error) {
 	}
 
 	return userToUpdate, nil
+}
+
+func (service *UserService) DeleteUser(userId uint64) error {
+	userToDelete, err := service.Repo.FindUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	userIsHost := false
+	if userToDelete.Role == model.GUEST {
+		err := client.CheckReservations(userToDelete.ID, "guest")
+		if err != nil {
+			return err
+		}
+	} else if userToDelete.Role == model.HOST {
+		userIsHost = true
+		err := client.CheckReservations(userToDelete.ID, "owner")
+		if err != nil {
+			return err
+		}
+	}
+
+	err = service.Repo.DeleteUser(userId)
+	if err != nil {
+		return err
+	}
+
+	if userIsHost {
+		err = client.DeleteAccomodationForHost(uint(userId))
+		if err != nil {
+			service.Repo.SaveUserDeletionEvent(userId)
+		}
+	}
+
+	return nil
 }
 
 func (service *UserService) EditUser(user model.UserDTO, userId uint64) error {

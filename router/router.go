@@ -15,6 +15,7 @@ func ConfigureRouter(handler *handler.Handler) *mux.Router {
 	
 	router.HandleFunc("/api/users/{id}", handler.FindUser).Methods("GET")
 	router.HandleFunc("/api/users/{id}", handler.EditUser).Methods("PUT")
+	router.HandleFunc("/api/users/{id}", handler.DeleteUser).Methods("DELETE")
 
 	return router
 }

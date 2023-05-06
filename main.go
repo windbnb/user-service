@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/windbnb/user-service/cronUtil"
 	handler "github.com/windbnb/user-service/handler"
 	repository "github.com/windbnb/user-service/repository"
 	router "github.com/windbnb/user-service/router"
@@ -22,6 +23,7 @@ func main() {
 
 	db := util.ConnectToDatabase()
 	router := router.ConfigureRouter(&handler.Handler{Service: &service.UserService{ Repo: &repository.Repository{Db: db}}})
+	cronUtil.ConfigureCronJobs(db)
 
 	srv := &http.Server{Addr: "localhost:8081", Handler: router}
 	go func() {
