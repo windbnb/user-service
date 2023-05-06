@@ -80,21 +80,25 @@ func (service *UserService) FindUser(userId uint64) (model.User, error) {
 
 func (service *UserService) DeleteUser(userId uint64) error {
 	userToDelete, err := service.Repo.FindUserById(userId)
-
 	if err != nil {
 		return err
 	}
 
 	userIsHost := false
 	if userToDelete.Role == model.GUEST {
-		// CHECK IF GUEST HAS ACTIVE RESERVATIONS
+		err := client.CheckReservations(userToDelete.ID, "guest")
+		if err != nil {
+			return err
+		}
 	} else if userToDelete.Role == model.HOST {
 		userIsHost = true
-		// CHECK IF HOST HAS ACTIVE FUTURE RESERVATIONS
+		err := client.CheckReservations(userToDelete.ID, "owner")
+		if err != nil {
+			return err
+		}
 	}
 
 	err = service.Repo.DeleteUser(userId)
-
 	if err != nil {
 		return err
 	}

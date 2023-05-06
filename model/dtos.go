@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -62,4 +64,22 @@ type CreateUserRequest struct {
 
 func (user *CreateUserRequest) ToUser() User {
 	return User{Email: user.Email, Name: user.Name, Surname: user.Surname, Password: user.Password, Address: user.Address, Role: user.Role, Username: user.Username}
+}
+
+type ReservationRequestStatus string
+
+const (
+	SUBMITTED ReservationRequestStatus = "SUBMITTED"
+	ACCEPTED  ReservationRequestStatus = "ACCEPTED"
+	DECLINED  ReservationRequestStatus = "DECLINED"
+)
+
+type ReservationRequestDto struct {
+    Status               ReservationRequestStatus `json:"status"`
+    GuestID              uint                     `json:"guestID"`
+    AccommodationID      uint                     `json:"accommodationID"`
+    ReservationRequestID uint                     `json:"reservationRequestID"`
+    StartDate            time.Time                `json:"startDate"`
+    EndDate              time.Time                `json:"endDate"`
+    GuestNumber          uint                     `json:"guestNumber"`
 }

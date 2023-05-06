@@ -125,8 +125,12 @@ func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusBadRequest})
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "unreachable") {
+			status = http.StatusGatewayTimeout
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: status})
 		return
 	}
 
