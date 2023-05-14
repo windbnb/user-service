@@ -9,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/windbnb/user-service/cronUtil"
 	handler "github.com/windbnb/user-service/handler"
 	repository "github.com/windbnb/user-service/repository"
 	router "github.com/windbnb/user-service/router"
 	service "github.com/windbnb/user-service/service"
+	"github.com/windbnb/user-service/tracer"
 	util "github.com/windbnb/user-service/util"
 )
 
@@ -22,7 +24,16 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	db := util.ConnectToDatabase()
-	router := router.ConfigureRouter(&handler.Handler{Service: &service.UserService{ Repo: &repository.Repository{Db: db}}})
+
+	tracer, closer := tracer.Init("user-service")
+	opentracing.SetGlobalTracer(tracer)
+	router := router.ConfigureRouter(&handler.Handler{
+		Tracer: tracer, 
+		Closer: closer, 
+		Service: &service.UserService{ 
+			Repo: &repository.Repository{
+				Db: db}}})
+	
 	cronUtil.ConfigureCronJobs(db)
 
 	srv := &http.Server{Addr: "localhost:8081", Handler: router}
