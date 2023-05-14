@@ -9,3 +9,10 @@ services:
             - "16686:16686"
             - "14268:14268"
             - "14250:14250"
+    prometheus:
+        image: prom/prometheus:latest
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./prometheus:/etc/prometheus
+            - ./prometheus-data:/prometheus
