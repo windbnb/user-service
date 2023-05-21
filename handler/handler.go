@@ -112,12 +112,15 @@ func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Split(cookie[0], " ")[1]
 	
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	err := handler.Service.AuthoriseUser(tokenString, model.GUEST, ctx)
+	user, err := handler.Service.AuthoriseUser(tokenString, model.GUEST, ctx)
 	
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user.ToDTO())
 }
 
 func (handler *Handler) AuthoriseHost(w http.ResponseWriter, r *http.Request) {
@@ -136,12 +139,15 @@ func (handler *Handler) AuthoriseHost(w http.ResponseWriter, r *http.Request) {
 	tokenString := strings.Split(cookie[0], " ")[1]
 	
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	err := handler.Service.AuthoriseUser(tokenString, model.HOST, ctx)
+	user, err := handler.Service.AuthoriseUser(tokenString, model.HOST, ctx)
 	
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user.ToDTO())
 }
 
 func (handler *Handler) FindUser(w http.ResponseWriter, r *http.Request) {

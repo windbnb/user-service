@@ -62,7 +62,7 @@ func (service *UserService) CreateUser(user model.User, ctx context.Context) (mo
 	return createdUser, nil
 }
 
-func (service *UserService) AuthoriseUser(tokenString string, role model.UserRole, ctx context.Context) error {
+func (service *UserService) AuthoriseUser(tokenString string, role model.UserRole, ctx context.Context) (model.User, error) {
 	span := tracer.StartSpanFromContext(ctx, "authoriseUserService")
 	defer span.Finish()
 
@@ -74,16 +74,23 @@ func (service *UserService) AuthoriseUser(tokenString string, role model.UserRol
 
 	if err != nil || !token.Valid {
 		tracer.LogError(span, err)
-		return err
+		return model.User{}, err
 	}
 
 	if token.Claims.(*model.Claims).Role != role {
 		err := errors.New("user does not have said role")
 		tracer.LogError(span, err)
-		return err
+		return model.User{}, err
 	}
 
-	return nil
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	user, err := service.Repo.FindUserById(uint64(token.Claims.(*model.Claims).Id), ctx)
+
+	if err != nil {
+		return model.User{}, err
+	}
+
+	return user, nil
 }
 
 func (service *UserService) FindUser(userId uint64, ctx context.Context) (model.User, error) {
