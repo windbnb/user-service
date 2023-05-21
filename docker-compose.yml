@@ -1,0 +1,59 @@
+version: "3"
+
+x-logging: &fluent-bit
+    driver: fluentd
+    options:
+        fluentd-address: 172.20.0.3:24224
+
+services:
+    database:
+        image: postgres:13
+        restart: always
+        networks:
+            - servers
+            - monitoring
+        environment:
+            POSTGRES_PASSWORD: root
+            POSTGRES_USER: postgres
+            POSTGRES_DB: UserServiceDB
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: pg_isready -U postgres -d UserServiceDB
+            retries: 3
+            interval: 5s
+            timeout: 5s
+        volumes:
+            - database-data:/var/lib/postgresql/data
+        logging: *fluent-bit
+
+    servers:
+        build: .
+        restart: on-failure
+        networks:
+            - servers
+            - monitoring
+        environment:
+            JAEGER_SERVICE_NAME: user-service
+            JAEGER_AGENT_HOST: jaeger
+            JAEGER_AGENT_PORT: 6831
+            JAEGER_SAMPLER_MANAGER_HOST_PORT: jaeger:5778
+            JAEGER_SAMPLER_TYPE: const
+            JAEGER_SAMPLER_PARAM: 1
+        ports:
+            - "8081:8081"
+        logging: *fluent-bit
+        depends_on:
+            database:
+                condition: service_healthy
+
+volumes:
+    database-data:
+        name: server-database
+
+networks:
+    servers:
+        name: servers
+        driver: bridge
+    monitoring:
+        external: true

@@ -17,7 +17,7 @@ var (
 )
 
 func ConnectToDatabase() *gorm.DB {
-	connectionString := "host=localhost user=postgres dbname=UserServiceDB sslmode=disable password=root port=5432"
+	connectionString := "host=database user=postgres dbname=UserServiceDB sslmode=disable password=root port=5432"
 	dialect := "postgres"
 
 	db, err := gorm.Open(dialect, connectionString)
