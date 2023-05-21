@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -17,7 +18,20 @@ var (
 )
 
 func ConnectToDatabase() *gorm.DB {
-	connectionString := "host=database user=postgres dbname=UserServiceDB sslmode=disable password=root port=5432"
+	host, hostFound := os.LookupEnv("DATABASE_HOST")
+	if !hostFound {
+		host = "localhost"
+	}
+	user, userFound := os.LookupEnv("DATABASE_USER")
+	if !userFound {
+		user = "postgres"
+	}
+	password, passwordFound := os.LookupEnv("DATABASE_PASSWORD")
+	if !passwordFound {
+		password = "root"
+	}
+
+	connectionString := "host=" + host + " user=" + user + " dbname=UserServiceDB sslmode=disable password=" + password + " port=5432"
 	dialect := "postgres"
 
 	db, err := gorm.Open(dialect, connectionString)

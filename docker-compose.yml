@@ -34,6 +34,9 @@ services:
             - servers
             - monitoring
         environment:
+            DATABASE_HOST: database
+            DATABASE_USER: database
+            DATABASE_PASSWORD: database
             JAEGER_SERVICE_NAME: user-service
             JAEGER_AGENT_HOST: jaeger
             JAEGER_AGENT_PORT: 6831
