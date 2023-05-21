@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"net/mail"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/windbnb/user-service/client"
 	"github.com/windbnb/user-service/model"
 	"github.com/windbnb/user-service/repository"
+	"github.com/windbnb/user-service/tracer"
 )
 
 var jwtKey = []byte("z7031Q8Qy9zVO-T2o7lsFIZSrd05hH0PaeaWIBvLh9s")
@@ -17,10 +19,15 @@ type UserService struct {
 	Repo *repository.Repository
 }
 
-func (service *UserService) Login(credentials model.Credentials) (string, error) {
-	user, err := service.Repo.CheckCredentials(credentials.Email, credentials.Password)
+func (service *UserService) Login(credentials model.Credentials, ctx context.Context) (string, error) {
+	span := tracer.StartSpanFromContext(ctx, "loginService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	user, err := service.Repo.CheckCredentials(credentials.Email, credentials.Password, ctx)
 
 	if err != nil {
+		tracer.LogError(span, err)
 		return "", errors.New("bad credentials")
 	}
 
@@ -33,23 +40,31 @@ func (service *UserService) Login(credentials model.Credentials) (string, error)
 	return tokenString, nil
 }
 
-func (service *UserService) CreateUser(user model.User) (model.User, error) {
+func (service *UserService) CreateUser(user model.User, ctx context.Context) (model.User, error) {
+	span := tracer.StartSpanFromContext(ctx, "createUserService")
+	defer span.Finish()
+
 	_, err := mail.ParseAddress(user.Email)
 
 	if err != nil {
+		tracer.LogError(span, err)
 		return user, errors.New("email format is not valid")
 	}
 
-	createdUser, err := service.Repo.CreateUser(user)
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	createdUser, err := service.Repo.CreateUser(user, ctx)
 
 	if err != nil {
+		tracer.LogError(span, err)
 		return user, errors.New("error while trying to save user")
 	}
 
 	return createdUser, nil
 }
 
-func (service *UserService) AuthoriseUser(tokenString string, role model.UserRole) error {
+func (service *UserService) AuthoriseUser(tokenString string, role model.UserRole, ctx context.Context) (model.User, error) {
+	span := tracer.StartSpanFromContext(ctx, "authoriseUserService")
+	defer span.Finish()
 
 	claims := model.Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, 
@@ -58,29 +73,49 @@ func (service *UserService) AuthoriseUser(tokenString string, role model.UserRol
 		})
 
 	if err != nil || !token.Valid {
-		return err
+		tracer.LogError(span, err)
+		return model.User{}, err
 	}
 
 	if token.Claims.(*model.Claims).Role != role {
-		return errors.New("user does not have said role")
+		err := errors.New("user does not have said role")
+		tracer.LogError(span, err)
+		return model.User{}, err
 	}
 
-	return nil
-}
-
-func (service *UserService) FindUser(userId uint64) (model.User, error) {
-	userToUpdate, err := service.Repo.FindUserById(userId)
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	user, err := service.Repo.FindUserById(uint64(token.Claims.(*model.Claims).Id), ctx)
 
 	if err != nil {
+		return model.User{}, err
+	}
+
+	return user, nil
+}
+
+func (service *UserService) FindUser(userId uint64, ctx context.Context) (model.User, error) {
+	span := tracer.StartSpanFromContext(ctx, "findUserService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToUpdate, err := service.Repo.FindUserById(userId, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
 		return model.User{}, errors.New("user with given id does not exist")
 	}
 
 	return userToUpdate, nil
 }
 
-func (service *UserService) DeleteUser(userId uint64) error {
-	userToDelete, err := service.Repo.FindUserById(userId)
+func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error {
+	span := tracer.StartSpanFromContext(ctx, "deleteUserService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToDelete, err := service.Repo.FindUserById(userId, ctx)
 	if err != nil {
+		tracer.LogError(span, err)
 		return err
 	}
 
@@ -88,35 +123,44 @@ func (service *UserService) DeleteUser(userId uint64) error {
 	if userToDelete.Role == model.GUEST {
 		err := client.CheckReservations(userToDelete.ID, "guest")
 		if err != nil {
+			tracer.LogError(span, err)
 			return err
 		}
 	} else if userToDelete.Role == model.HOST {
 		userIsHost = true
 		err := client.CheckReservations(userToDelete.ID, "owner")
 		if err != nil {
+			tracer.LogError(span, err)
 			return err
 		}
 	}
 
-	err = service.Repo.DeleteUser(userId)
+	err = service.Repo.DeleteUser(userId, ctx)
 	if err != nil {
+		tracer.LogError(span, err)
 		return err
 	}
 
 	if userIsHost {
 		err = client.DeleteAccomodationForHost(uint(userId))
 		if err != nil {
-			service.Repo.SaveUserDeletionEvent(userId)
+			tracer.LogError(span, err)
+			service.Repo.SaveUserDeletionEvent(userId, ctx)
 		}
 	}
 
 	return nil
 }
 
-func (service *UserService) EditUser(user model.UserDTO, userId uint64) error {
-	userToUpdate, err := service.Repo.FindUserById(userId)
+func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) error {
+	span := tracer.StartSpanFromContext(ctx, "editUserService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToUpdate, err := service.Repo.FindUserById(userId, ctx)
 
 	if err != nil {
+		tracer.LogError(span, err)
 		return errors.New("user with given id does not exist")
 	}
 
@@ -127,15 +171,19 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64) error {
 
 	if user.OldPassword != "" {
 		if user.OldPassword != userToUpdate.Password {
-			return errors.New("old and new password do not match")
+			err := errors.New("old and new password do not match")
+			tracer.LogError(span, err)
+			return err
 		}
 
 		userToUpdate.Password = user.NewPassword
 	}
 
-	_, err = service.Repo.SaveUser(userToUpdate)
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	_, err = service.Repo.SaveUser(userToUpdate, ctx)
 
 	if err != nil {
+		tracer.LogError(span, err)
 		return errors.New("error while saving user")
 	}
 
