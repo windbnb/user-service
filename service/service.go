@@ -16,7 +16,7 @@ import (
 var jwtKey = []byte("z7031Q8Qy9zVO-T2o7lsFIZSrd05hH0PaeaWIBvLh9s")
 
 type UserService struct {
-	Repo *repository.Repository
+	Repo repository.IRepository
 }
 
 func (service *UserService) Login(credentials model.Credentials, ctx context.Context) (string, error) {
