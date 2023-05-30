@@ -3,7 +3,7 @@ version: "3"
 x-logging: &fluent-bit
     driver: fluentd
     options:
-        fluentd-address: 172.20.0.3:24224
+        fluentd-address: 172.18.0.8:24224
 
 services:
     database:
@@ -27,16 +27,17 @@ services:
             - database-data:/var/lib/postgresql/data
         logging: *fluent-bit
 
-    servers:
+    user-service:
         build: .
         restart: on-failure
         networks:
             - servers
             - monitoring
+        container_name: user-service
         environment:
             DATABASE_HOST: database
-            DATABASE_USER: database
-            DATABASE_PASSWORD: database
+            DATABASE_USER: postgres
+            DATABASE_PASSWORD: root
             JAEGER_SERVICE_NAME: user-service
             JAEGER_AGENT_HOST: jaeger
             JAEGER_AGENT_PORT: 6831
