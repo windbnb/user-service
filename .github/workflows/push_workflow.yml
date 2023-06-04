@@ -56,7 +56,7 @@ jobs:
             # Perform GitHub Code Scanning.
             - name: Perform CodeQL Analysis
               uses: github/codeql-action/analyze@v2
-    docker:
+    dockerhub:
         runs-on: ubuntu-latest
         needs: test
         steps:
@@ -76,4 +76,4 @@ jobs:
               uses: docker/build-push-action@v3
               with:
                   push: true
-                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb:latest
+                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb-user-service:latest
