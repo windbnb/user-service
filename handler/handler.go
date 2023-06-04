@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -80,13 +81,20 @@ func (handler *Handler) EditUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	userId, _ := strconv.ParseUint(params["id"], 10, 32)
 
+	ctx := tracer.ContextWithSpan(context.Background(), span)
+	err := handler.authenticateAnyUser(r, userId, ctx)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusUnauthorized})
+		return
+	}
+
 	var userDTO model.UserDTO
 	json.NewDecoder(r.Body).Decode(&userDTO)
 
-	ctx := tracer.ContextWithSpan(context.Background(), span)
-	err := handler.Service.EditUser(userDTO, userId, ctx)
+	err = handler.Service.EditUser(userDTO, userId, ctx)
 
-	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusBadRequest})
@@ -103,16 +111,16 @@ func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
 		tracer.LogString("handler", fmt.Sprintf("handling guest authorisation at %s\n", r.URL.Path)),
 	)
 
-	cookie := r.Header.Values("Authorization")
-	if cookie == nil {
+	authHeader := r.Header.Values("Authorization")
+	if authHeader == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	tokenString := strings.Split(cookie[0], " ")[1]
+	tokenString := strings.Split(authHeader[0], " ")[1]
 	
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	user, err := handler.Service.AuthoriseUser(tokenString, model.GUEST, ctx)
+	user, err := handler.Service.AuthenticateUser(tokenString, model.GUEST, true, ctx)
 	
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -130,16 +138,16 @@ func (handler *Handler) AuthoriseHost(w http.ResponseWriter, r *http.Request) {
 		tracer.LogString("handler", fmt.Sprintf("handling host authorisation at %s\n", r.URL.Path)),
 	)
 
-	cookie := r.Header.Values("Authorization")
-	if cookie == nil {
+	authHeader := r.Header.Values("Authorization")
+	if authHeader == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	tokenString := strings.Split(cookie[0], " ")[1]
+	tokenString := strings.Split(authHeader[0], " ")[1]
 	
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	user, err := handler.Service.AuthoriseUser(tokenString, model.HOST, ctx)
+	user, err := handler.Service.AuthenticateUser(tokenString, model.HOST, true, ctx)
 	
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -184,9 +192,16 @@ func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userId, _ := strconv.ParseUint(params["id"], 10, 32)
 
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	err := handler.Service.DeleteUser(userId, ctx)
-
+	err := handler.authenticateAnyUser(r, userId, ctx)
 	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusUnauthorized})
+		return
+	}
+
+	err = handler.Service.DeleteUser(userId, ctx)
+
 	if err != nil {
 		status := http.StatusBadRequest
 		if strings.Contains(err.Error(), "unreachable") {
@@ -198,4 +213,24 @@ func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (handler *Handler) authenticateAnyUser(r *http.Request, userId uint64, ctx context.Context) error {
+	authHeader := r.Header.Values("Authorization")
+	if authHeader == nil {
+		return errors.New("Unauthorised")
+	}
+
+	tokenString := strings.Split(authHeader[0], " ")[1]
+	
+	user, err := handler.Service.AuthenticateUser(tokenString, model.HOST, false, ctx)
+	if err != nil {
+		return errors.New("Unauthorised")
+	}
+
+	if user.ID != uint(userId) {
+		return errors.New("cannot edit or delete another user")
+	}
+
+	return nil
 }
