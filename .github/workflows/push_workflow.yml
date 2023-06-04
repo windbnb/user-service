@@ -72,8 +72,12 @@ jobs:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+            - name: Determine version number
+              id: version
+              run: echo "::set-output name=VERSION::$(git describe --tags --abbrev=0)"
+
             - name: Build and push
               uses: docker/build-push-action@v3
               with:
                   push: true
-                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb-user-service:latest
+                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb-user-service:${{ steps.version.outputs.VERSION }}
