@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/opentracing/opentracing-go"
-	"github.com/rs/cors"
 	"github.com/windbnb/user-service/cronUtil"
 	handler "github.com/windbnb/user-service/handler"
 	repository "github.com/windbnb/user-service/repository"
@@ -37,15 +36,7 @@ func main() {
 
 	cronUtil.ConfigureCronJobs(db)
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3005"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowCredentials: true,
-		Debug:            true,
-		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
-	})
-
-	srv := &http.Server{Addr: "localhost:8081", Handler: c.Handler(router)}
+	srv := &http.Server{Addr: "0.0.0.0:8081", Handler: router}
 	go func() {
 		log.Println("server starting")
 		if err := srv.ListenAndServe(); err != nil {
