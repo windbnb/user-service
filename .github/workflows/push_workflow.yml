@@ -2,6 +2,8 @@ name: Push workflow
 
 on:
     push:
+        tags:
+            - "*"
         # branches:
         #     - develop
         #     - master
@@ -72,12 +74,11 @@ jobs:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            - name: Determine version number
-              id: version
-              run: echo "GIT_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
+            - name: Set release version
+              run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
             - name: Build and push
               uses: docker/build-push-action@v3
               with:
                   push: true
-                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb-user-service:$GITHUB_ENV
+                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/windbnb-user-service:${{ env.RELEASE_VERSION }}
