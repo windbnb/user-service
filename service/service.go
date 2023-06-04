@@ -62,7 +62,7 @@ func (service *UserService) CreateUser(user model.User, ctx context.Context) (mo
 	return createdUser, nil
 }
 
-func (service *UserService) AuthoriseUser(tokenString string, role model.UserRole, ctx context.Context) (model.User, error) {
+func (service *UserService) AuthenticateUser(tokenString string, role model.UserRole, authorise bool, ctx context.Context) (model.User, error) {
 	span := tracer.StartSpanFromContext(ctx, "authoriseUserService")
 	defer span.Finish()
 
@@ -77,7 +77,7 @@ func (service *UserService) AuthoriseUser(tokenString string, role model.UserRol
 		return model.User{}, err
 	}
 
-	if token.Claims.(*model.Claims).Role != role {
+	if authorise && token.Claims.(*model.Claims).Role != role {
 		err := errors.New("user does not have said role")
 		tracer.LogError(span, err)
 		return model.User{}, err
