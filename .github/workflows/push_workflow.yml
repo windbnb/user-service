@@ -1,5 +1,5 @@
 name: Push workflow
-
+permissions: read-all|write-all
 on:
     push:
         # branches:
@@ -85,7 +85,7 @@ jobs:
                    'develop'
                   ]
               env:
-                GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push
               uses: docker/build-push-action@v3
