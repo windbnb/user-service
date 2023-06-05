@@ -1,5 +1,5 @@
 name: Push workflow
-permissions: read-all|write-all
+permissions: write-all
 on:
     push:
         # branches:
