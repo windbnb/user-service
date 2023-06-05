@@ -2,9 +2,8 @@ name: Push workflow
 permissions: write-all
 on:
     push:
-        # branches:
-        #     - develop
-        #     - master
+         branches:
+             - master
 
 jobs:
     build:
