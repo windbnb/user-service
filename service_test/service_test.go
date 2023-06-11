@@ -9,13 +9,44 @@ import (
 	"github.com/windbnb/user-service/model"
 	"github.com/windbnb/user-service/repository"
 	"github.com/windbnb/user-service/service"
+	"github.com/windbnb/user-service/util"
 )
 
+func TestLogin_ValidCredentials_Integration(t *testing.T) {
+	db := util.ConnectToDatabase()
+	defer db.Close()
+	userService := service.UserService{Repo: &repository.Repository{Db: db}}
+
+	credentials := model.Credentials {
+		Email:    "host@email.com",
+		Password: "host",
+	}
+
+	token, err := userService.Login(credentials, context.Background())
+
+	assert.NotEmpty(t, token)
+	assert.NoError(t, err)
+}
+
+func TestLogin_InvalidCredentials_Integration(t *testing.T) {
+	db := util.ConnectToDatabase()
+	defer db.Close()
+	userService := service.UserService{Repo: &repository.Repository{Db: db}}
+
+	credentials := model.Credentials{
+		Email:    "host@email.com",
+		Password: "wrong_password",
+	}
+
+	token, err := userService.Login(credentials, context.Background())
+
+	assert.Empty(t, token)
+	assert.EqualError(t, err, "bad credentials")
+}
+
 func TestLogin_SuccessfulLogin(t *testing.T) {
-	// Create a mock repository with desired behavior
 	mockRepo := &MockRepo{
 		CheckCredentialsFn: func(email, password string, ctx context.Context) (model.User, error) {
-			// Return a mock user for successful login
 			return model.User{
 				Email: "test@example.com",
 				Password: "password",
@@ -24,53 +55,105 @@ func TestLogin_SuccessfulLogin(t *testing.T) {
 		},
 	}
 
-	// Create an instance of the UserService with the mock repository
 	userService := service.UserService{
 		Repo: mockRepo,
 	}
 
-	// Call the Login function with mock credentials and context
 	credentials := model.Credentials{
 		Email:    "test@example.com",
 		Password: "password",
 	}
 	token, err := userService.Login(credentials, context.Background())
 
-	// Assert that the returned token is not empty and there is no error
 	assert.NotEmpty(t, token)
 	assert.NoError(t, err)
 }
 
 func TestLogin_InvalidCredentials(t *testing.T) {
-	// Create a mock repository with desired behavior
 	mockRepo := &MockRepo{
 		CheckCredentialsFn: func(email, password string, ctx context.Context) (model.User, error) {
-			// Return an error for invalid credentials
 			return model.User{}, errors.New("invalid credentials")
 		},
 	}
 
-	// Create an instance of the UserService with the mock repository
 	userService := service.UserService{
 		Repo: mockRepo,
 	}
 
-	// Call the Login function with mock credentials and context
 	credentials := model.Credentials{
 		Email:    "test@example.com",
 		Password: "password",
 	}
 	token, err := userService.Login(credentials, context.Background())
 
-	// Assert that the returned token is empty and there is an error
 	assert.Empty(t, token)
 	assert.EqualError(t, err, "bad credentials")
+}
+
+func TestCreateUser_InvalidEmailFormat(t *testing.T) {
+	mockRepo := &MockRepo{}
+
+	userService := service.UserService{
+		Repo: mockRepo,
+	}
+
+	user := model.User{
+		Email: "invalid_email",
+	}
+
+	createdUser, err := userService.CreateUser(user, context.Background())
+
+	assert.Equal(t, user, createdUser)
+	assert.EqualError(t, err, "email format is not valid")
+}
+
+func TestCreateUser_ErrorSavingUser(t *testing.T) {
+	mockRepo := &MockRepo{
+		CreateUserFn: func(user model.User, ctx context.Context) (model.User, error) {
+			return model.User{}, errors.New("error saving user")
+		},
+	}
+
+	userService := service.UserService{
+		Repo: mockRepo,
+	}
+
+	user := model.User{
+		Email: "test@example.com",
+	}
+
+	createdUser, err := userService.CreateUser(user, context.Background())
+
+	assert.Equal(t, user, createdUser)
+	assert.EqualError(t, err, "error while trying to save user")
+}
+
+func TestCreateUser_Successful(t *testing.T) {
+	mockRepo := &MockRepo{
+		CreateUserFn: func(user model.User, ctx context.Context) (model.User, error) {
+			return user, nil
+		},
+	}
+
+	userService := service.UserService{
+		Repo: mockRepo,
+	}
+
+	user := model.User{
+		Email: "test@example.com",
+	}
+
+	createdUser, err := userService.CreateUser(user, context.Background())
+
+	assert.Equal(t, user, createdUser)
+	assert.NoError(t, err)
 }
 
 
 type MockRepo struct {
 	repository.Repository
 	CheckCredentialsFn func(email, password string, ctx context.Context) (model.User, error)
+	CreateUserFn func(user model.User, ctx context.Context) (model.User, error)
 }
 
 func (m *MockRepo) CheckCredentials(email, password string, ctx context.Context) (model.User, error) {
@@ -78,7 +161,7 @@ func (m *MockRepo) CheckCredentials(email, password string, ctx context.Context)
 }
 
 func (m *MockRepo) CreateUser(user model.User, ctx context.Context) (model.User, error) {
-	return user, nil
+	return m.CreateUserFn(user, ctx)
 }
 
 func (m *MockRepo) FindUserById(id uint64, ctx context.Context) (model.User, error) {
