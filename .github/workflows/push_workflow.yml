@@ -4,7 +4,6 @@ on:
     push:
         branches:
             - master
-            - develop
 
 jobs:
     build:
@@ -100,8 +99,7 @@ jobs:
               with:
                   branches: |
                       [
-                       'master',
-                       'develop'
+                       'master'
                       ]
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
