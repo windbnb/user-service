@@ -16,8 +16,8 @@ type responseWriter struct {
 }
 
 func (r *responseWriter) WriteHeader(status int) {
-    r.statusCode = status
-    r.ResponseWriter.WriteHeader(status)
+	r.statusCode = status
+	r.ResponseWriter.WriteHeader(status)
 }
 
 var (
@@ -55,14 +55,15 @@ var (
 			Name: "not_found_response_status_counter",
 			Help: "Counter for the 404 status of the HTTP response.",
 		},
-	[]string{"status"})
+
+		[]string{"status"})
 
 	uniqueVisitorCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "unique_visitor_counter",
 			Help: "Counter for each unique visitor.",
 		},
-	[]string{"visitor"})
+		[]string{"visitor"})
 
 	// Add all metrics that will be resisted
 	metricsList = []prometheus.Collector{
@@ -70,6 +71,7 @@ var (
 		httpHitsSuccess,
 		httpHitsFailed,
 		uniqueVisitorCounter,
+		httpStatusNotFoundCounter,
 		trafficAccumulationMetric,
 	}
 
@@ -90,7 +92,7 @@ func MetricProxy(f func(http.ResponseWriter, *http.Request)) func(http.ResponseW
 	return func(w http.ResponseWriter, r *http.Request) {
 		route := mux.CurrentRoute(r)
 		path, _ := route.GetPathTemplate()
-		
+
 		userAgent := r.Header.Get("User-Agent")
 		rw := &responseWriter{w, http.StatusOK}
 
@@ -100,7 +102,7 @@ func MetricProxy(f func(http.ResponseWriter, *http.Request)) func(http.ResponseW
 
 		requestSize, _ := strconv.Atoi((r.Header.Get("Content-Length")))
 		trafficAccumulationMetric.Add(float64(requestSize) / 1e9)
-		
+
 		uniqueVisitorCounter.WithLabelValues(r.RemoteAddr + " (" + r.Host + ") via " + userAgent).Inc()
 
 		if rw.statusCode >= 200 && rw.statusCode < 400 {

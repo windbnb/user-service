@@ -46,6 +46,7 @@ func main() {
 	})
 
 	srv := &http.Server{Addr: "localhost:8081", Handler: c.Handler(router)}
+
 	go func() {
 		log.Println("server starting")
 		if err := srv.ListenAndServe(); err != nil {
