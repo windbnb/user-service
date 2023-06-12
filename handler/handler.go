@@ -94,7 +94,7 @@ func (handler *Handler) EditUser(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&userDTO)
 
 	ctx := tracer.ContextWithSpan(context.Background(), span)
-	err := handler.Service.EditUser(userDTO, userId, ctx)
+	err = handler.Service.EditUser(userDTO, userId, ctx)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
