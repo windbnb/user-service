@@ -55,6 +55,7 @@ var (
 			Name: "not_found_response_status_counter",
 			Help: "Counter for the 404 status of the HTTP response.",
 		},
+
 		[]string{"status"})
 
 	uniqueVisitorCounter = prometheus.NewCounterVec(

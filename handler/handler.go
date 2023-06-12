@@ -93,7 +93,8 @@ func (handler *Handler) EditUser(w http.ResponseWriter, r *http.Request) {
 	var userDTO model.UserDTO
 	json.NewDecoder(r.Body).Decode(&userDTO)
 
-	err = handler.Service.EditUser(userDTO, userId, ctx)
+	ctx := tracer.ContextWithSpan(context.Background(), span)
+	err := handler.Service.EditUser(userDTO, userId, ctx)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -121,7 +122,7 @@ func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
 	
 	ctx := tracer.ContextWithSpan(context.Background(), span)
 	user, err := handler.Service.AuthenticateUser(tokenString, model.GUEST, true, ctx)
-	
+
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return

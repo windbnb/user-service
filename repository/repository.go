@@ -10,6 +10,15 @@ import (
 	"github.com/windbnb/user-service/tracer"
 )
 
+type IRepository interface {
+	CheckCredentials(email, password string, ctx context.Context) (model.User, error)
+	CreateUser(user model.User, ctx context.Context) (model.User, error)
+	FindUserById(id uint64, ctx context.Context) (model.User, error)
+	SaveUser(user model.User, ctx context.Context) (model.User, error)
+	SaveUserDeletionEvent(userId uint64, ctx context.Context)
+	DeleteUser(userId uint64, ctx context.Context) error
+}
+
 type Repository struct {
 	Db *gorm.DB
 }
