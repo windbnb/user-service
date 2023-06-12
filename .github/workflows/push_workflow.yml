@@ -5,7 +5,6 @@ on:
         branches:
             - master
             - develop
-            - feature-github-actions
 
 jobs:
     build:
@@ -102,7 +101,6 @@ jobs:
                   branches: |
                       [
                        'master',
-                       'feature-github-actions',
                        'develop'
                       ]
               env:
