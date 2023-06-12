@@ -93,7 +93,7 @@ func (handler *Handler) EditUser(w http.ResponseWriter, r *http.Request) {
 	var userDTO model.UserDTO
 	json.NewDecoder(r.Body).Decode(&userDTO)
 
-	ctx := tracer.ContextWithSpan(context.Background(), span)
+	ctx = tracer.ContextWithSpan(context.Background(), span)
 	err = handler.Service.EditUser(userDTO, userId, ctx)
 
 	if err != nil {
