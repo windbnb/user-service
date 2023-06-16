@@ -67,7 +67,7 @@ func (service *UserService) AuthenticateUser(tokenString string, role model.User
 	defer span.Finish()
 
 	claims := model.Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, &claims, 
+	token, err := jwt.ParseWithClaims(tokenString, &claims,
 		func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
@@ -152,8 +152,46 @@ func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error
 	return nil
 }
 
-func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) error {
+func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) (model.User, error) {
 	span := tracer.StartSpanFromContext(ctx, "editUserService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToUpdate, err := service.Repo.FindUserById(userId, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return model.User{}, errors.New("user with given id does not exist")
+	}
+
+	userToUpdate.Name = user.Name
+	userToUpdate.Surname = user.Surname
+	userToUpdate.Email = user.Email
+	userToUpdate.Address = user.Address
+
+	userWithSameUsername := service.Repo.FindUserByUsername(user.Username, ctx)
+
+	if userWithSameUsername.ID != 0 && user.Username != userToUpdate.Username {
+		err := errors.New("already exist user with the same username")
+		tracer.LogError(span, err)
+		return model.User{}, err
+	}
+
+	userToUpdate.Username = user.Username
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	savedUser, err := service.Repo.SaveUser(userToUpdate, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return model.User{}, errors.New("error while saving user")
+	}
+
+	return savedUser, nil
+}
+
+func (service *UserService) ChangePassword(user model.ChangePasswordDTO, userId uint64, ctx context.Context) error {
+	span := tracer.StartSpanFromContext(ctx, "changePasswordService")
 	defer span.Finish()
 
 	ctx = tracer.ContextWithSpan(context.Background(), span)
@@ -163,11 +201,6 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 		tracer.LogError(span, err)
 		return errors.New("user with given id does not exist")
 	}
-
-	userToUpdate.Name = user.Name
-	userToUpdate.Surname = user.Surname
-	userToUpdate.Email = user.Email
-	userToUpdate.Address = user.Address
 
 	if user.OldPassword != "" {
 		if user.OldPassword != userToUpdate.Password {

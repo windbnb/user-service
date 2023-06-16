@@ -45,7 +45,7 @@ func main() {
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
 	})
 
-	srv := &http.Server{Addr: "localhost:8081", Handler: c.Handler(router)}
+	srv := &http.Server{Addr: "0.0.0.0:8081", Handler: c.Handler(router)}
 
 	go func() {
 		log.Println("server starting")
