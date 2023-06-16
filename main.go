@@ -45,7 +45,12 @@ func main() {
 		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"},
 	})
 
-	srv := &http.Server{Addr: "localhost:8081", Handler: c.Handler(router)}
+	servicePath, servicePathFound := os.LookupEnv("SERVICE_PATH")
+	if !servicePathFound {
+		servicePath = "http://localhost:8081"
+	}
+
+	srv := &http.Server{Addr: servicePath, Handler: c.Handler(router)}
 
 	go func() {
 		log.Println("server starting")
