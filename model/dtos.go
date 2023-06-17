@@ -15,6 +15,11 @@ type UserDTO struct {
 	Username string `json:"username"`
 	OldPassword string `json:"oldPassword"`
 	NewPassword string `json:"newPassword"`
+	ReservationRequestNotification bool `json:"reservationRequestNotification"`
+	ReservationCanceledNotification bool `json:"reservationCanceledNotification"`
+	SelfReviewNotification bool `json:"selfReviewNotification"`
+	AccomodationReviewNotification bool `json:"accomodationReviewNotification"`
+	ReservationStatusChangedNotification bool `json:"reservationStatusChangedNotification"`
 }
 
 func (user *UserDTO) ToUser() User {
@@ -29,6 +34,11 @@ type UserResponseDTO struct {
 	Address string `json:"address"`
 	Username string `json:"username"`
 	Role UserRole `json:"role"`
+	ReservationRequestNotification bool `json:"reservationRequestNotification"`
+	ReservationCanceledNotification bool `json:"reservationCanceledNotification"`
+	SelfReviewNotification bool `json:"selfReviewNotification"`
+	AccomodationReviewNotification bool `json:"accomodationReviewNotification"`
+	ReservationStatusChangedNotification bool `json:"reservationStatusChangedNotification"`
 }
 
 type Credentials struct {

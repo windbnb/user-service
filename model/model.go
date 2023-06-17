@@ -19,11 +19,21 @@ type User struct {
 	Name string `gorm:"not null;default:null"`
 	Surname string `gorm:"not null;default:null"`
 	Address string `gorm:"not null;default:null"`
-	Role UserRole
+	Role UserRole `gorm:"not null;default:null"`
+	ReservationRequestNotification bool `gorm:"not null;default:false"`
+	ReservationCanceledNotification bool `gorm:"not null;default:false"`
+	SelfReviewNotification bool `gorm:"not null;default:false"`
+	AccomodationReviewNotification bool `gorm:"not null;default:false"`
+	ReservationStatusChangedNotification bool `gorm:"not null;default:false"`
 }
 
 func (user *User) ToDTO() UserResponseDTO {
-	return UserResponseDTO{Id: user.ID, Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address, Username: user.Username, Role: user.Role}
+	return UserResponseDTO{Id: user.ID, Email: user.Email, Name: user.Name, Surname: user.Surname, Address: user.Address, Username: user.Username, Role: user.Role,
+							ReservationRequestNotification: user.ReservationRequestNotification, 
+							ReservationCanceledNotification: user.ReservationCanceledNotification, 
+							SelfReviewNotification: user.SelfReviewNotification,
+							AccomodationReviewNotification: user.AccomodationReviewNotification, 
+							ReservationStatusChangedNotification: user.ReservationStatusChangedNotification}
 }
 
 type UserDeletionEvent struct {
