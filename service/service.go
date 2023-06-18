@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"net/mail"
 	"time"
@@ -13,7 +15,20 @@ import (
 	"github.com/windbnb/user-service/tracer"
 )
 
-var jwtKey = []byte("z7031Q8Qy9zVO-T2o7lsFIZSrd05hH0PaeaWIBvLh9s")
+
+var jwtKey []byte
+
+func InitJWTKey() {
+	keyLength := 32
+
+	randomString := make([]byte, keyLength)
+	_, err := rand.Read(randomString)
+	if err != nil {
+		panic(err)
+	}
+
+	jwtKey = []byte(base64.RawURLEncoding.EncodeToString(randomString))
+}
 
 type UserService struct {
 	Repo repository.IRepository
@@ -49,6 +64,15 @@ func (service *UserService) CreateUser(user model.User, ctx context.Context) (mo
 	if err != nil {
 		tracer.LogError(span, err)
 		return user, errors.New("email format is not valid")
+	}
+
+	if user.Role == model.GUEST {
+		user.ReservationStatusChangedNotification = true;
+	} else {
+		user.SelfReviewNotification = true;
+		user.AccomodationReviewNotification = true;
+		user.ReservationRequestNotification = true;
+		user.ReservationCanceledNotification = true;
 	}
 
 	ctx = tracer.ContextWithSpan(context.Background(), span)
@@ -168,6 +192,15 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 	userToUpdate.Surname = user.Surname
 	userToUpdate.Email = user.Email
 	userToUpdate.Address = user.Address
+
+	if userToUpdate.Role == model.GUEST {
+		userToUpdate.ReservationStatusChangedNotification = user.ReservationStatusChangedNotification;
+	} else {
+		userToUpdate.SelfReviewNotification = user.SelfReviewNotification;
+		userToUpdate.AccomodationReviewNotification = user.AccomodationReviewNotification;
+		userToUpdate.ReservationRequestNotification = user.ReservationRequestNotification;
+		userToUpdate.ReservationCanceledNotification = user.ReservationCanceledNotification;
+	}
 
 	if user.OldPassword != "" {
 		if user.OldPassword != userToUpdate.Password {

@@ -25,6 +25,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	db := util.ConnectToDatabase()
+	service.InitJWTKey()
 
 	tracer, closer := tracer.Init("user-service")
 	opentracing.SetGlobalTracer(tracer)
@@ -47,7 +48,7 @@ func main() {
 
 	servicePath, servicePathFound := os.LookupEnv("SERVICE_PATH")
 	if !servicePathFound {
-		servicePath = "http://localhost:8081"
+		servicePath = "localhost:8081"
 	}
 
 	srv := &http.Server{Addr: servicePath, Handler: c.Handler(router)}
