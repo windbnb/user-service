@@ -99,6 +99,10 @@ func TestCreateUser_InvalidEmailFormat(t *testing.T) {
 
 	user := model.User{
 		Email: "invalid_email",
+		ReservationRequestNotification:true, 
+		ReservationCanceledNotification:true, 
+		SelfReviewNotification:true, 
+		AccomodationReviewNotification:true,
 	}
 
 	createdUser, err := userService.CreateUser(user, context.Background())
@@ -120,6 +124,10 @@ func TestCreateUser_ErrorSavingUser(t *testing.T) {
 
 	user := model.User{
 		Email: "test@example.com",
+		ReservationRequestNotification:true, 
+		ReservationCanceledNotification:true, 
+		SelfReviewNotification:true, 
+		AccomodationReviewNotification:true,
 	}
 
 	createdUser, err := userService.CreateUser(user, context.Background())
@@ -141,6 +149,10 @@ func TestCreateUser_Successful(t *testing.T) {
 
 	user := model.User{
 		Email: "test@example.com",
+		ReservationRequestNotification:true, 
+		ReservationCanceledNotification:true, 
+		SelfReviewNotification:true, 
+		AccomodationReviewNotification:true,
 	}
 
 	createdUser, err := userService.CreateUser(user, context.Background())
