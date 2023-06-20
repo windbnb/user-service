@@ -15,7 +15,6 @@ import (
 	"github.com/windbnb/user-service/tracer"
 )
 
-
 var jwtKey []byte
 
 func InitJWTKey() {
@@ -67,12 +66,12 @@ func (service *UserService) CreateUser(user model.User, ctx context.Context) (mo
 	}
 
 	if user.Role == model.GUEST {
-		user.ReservationStatusChangedNotification = true;
+		user.ReservationStatusChangedNotification = true
 	} else {
-		user.SelfReviewNotification = true;
-		user.AccomodationReviewNotification = true;
-		user.ReservationRequestNotification = true;
-		user.ReservationCanceledNotification = true;
+		user.SelfReviewNotification = true
+		user.AccomodationReviewNotification = true
+		user.ReservationRequestNotification = true
+		user.ReservationCanceledNotification = true
 	}
 
 	ctx = tracer.ContextWithSpan(context.Background(), span)
@@ -91,7 +90,7 @@ func (service *UserService) AuthenticateUser(tokenString string, role model.User
 	defer span.Finish()
 
 	claims := model.Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, &claims, 
+	token, err := jwt.ParseWithClaims(tokenString, &claims,
 		func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
@@ -176,7 +175,7 @@ func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error
 	return nil
 }
 
-func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) error {
+func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) (model.User, error) {
 	span := tracer.StartSpanFromContext(ctx, "editUserService")
 	defer span.Finish()
 
@@ -185,7 +184,7 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 
 	if err != nil {
 		tracer.LogError(span, err)
-		return errors.New("user with given id does not exist")
+		return model.User{}, errors.New("user with given id does not exist")
 	}
 
 	userToUpdate.Name = user.Name
@@ -194,12 +193,44 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 	userToUpdate.Address = user.Address
 
 	if userToUpdate.Role == model.GUEST {
-		userToUpdate.ReservationStatusChangedNotification = user.ReservationStatusChangedNotification;
+		userToUpdate.ReservationStatusChangedNotification = user.ReservationStatusChangedNotification
 	} else {
-		userToUpdate.SelfReviewNotification = user.SelfReviewNotification;
-		userToUpdate.AccomodationReviewNotification = user.AccomodationReviewNotification;
-		userToUpdate.ReservationRequestNotification = user.ReservationRequestNotification;
-		userToUpdate.ReservationCanceledNotification = user.ReservationCanceledNotification;
+		userToUpdate.SelfReviewNotification = user.SelfReviewNotification
+		userToUpdate.AccomodationReviewNotification = user.AccomodationReviewNotification
+		userToUpdate.ReservationRequestNotification = user.ReservationRequestNotification
+		userToUpdate.ReservationCanceledNotification = user.ReservationCanceledNotification
+	}
+
+	userWithSameUsername := service.Repo.FindUserByUsername(user.Username, ctx)
+
+	if userWithSameUsername.ID != 0 && user.Username != userToUpdate.Username {
+		err := errors.New("already exist user with the same username")
+		tracer.LogError(span, err)
+		return model.User{}, err
+	}
+
+	userToUpdate.Username = user.Username
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	savedUser, err := service.Repo.SaveUser(userToUpdate, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return model.User{}, errors.New("error while saving user")
+	}
+	return savedUser, nil
+}
+
+func (service *UserService) ChangePassword(user model.ChangePasswordDTO, userId uint64, ctx context.Context) error {
+	span := tracer.StartSpanFromContext(ctx, "changePasswordService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToUpdate, err := service.Repo.FindUserById(userId, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return errors.New("user with given id does not exist")
 	}
 
 	if user.OldPassword != "" {

@@ -7,9 +7,9 @@ import (
 )
 
 var BaseAccomodationServicePathRoundRobin, _ = roundrobin.New(
-    &url.URL{Host: "http://localhost:8082/api"},
+	&url.URL{Host: "http://nginx:8000/api"},
 )
 
 var BaseReservationServicePathRoundRobin, _ = roundrobin.New(
-    &url.URL{Host: "http://localhost:8083/api"},
+	&url.URL{Host: "http://localhost:8083/api"},
 )

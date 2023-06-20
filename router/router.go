@@ -13,9 +13,10 @@ func ConfigureRouter(handler *handler.Handler) *mux.Router {
 
 	router.HandleFunc("/api/users/authorize/guest", metrics.MetricProxy(handler.AuthoriseGuest)).Methods("POST")
 	router.HandleFunc("/api/users/authorize/host", metrics.MetricProxy(handler.AuthoriseHost)).Methods("POST")
-	
+
 	router.HandleFunc("/api/users/{id}", metrics.MetricProxy(handler.FindUser)).Methods("GET")
 	router.HandleFunc("/api/users/{id}", metrics.MetricProxy(handler.EditUser)).Methods("PUT")
+	router.HandleFunc("/api/users/change-password/{id}", metrics.MetricProxy(handler.ChangePassword)).Methods("PUT")
 	router.HandleFunc("/api/users/{id}", metrics.MetricProxy(handler.DeleteUser)).Methods("DELETE")
 
 	router.Path("/metrics").Handler(metrics.MetricsHandler())
