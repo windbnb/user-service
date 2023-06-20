@@ -218,6 +218,7 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 		tracer.LogError(span, err)
 		return model.User{}, errors.New("error while saving user")
 	}
+
 	return savedUser, nil
 }
 
