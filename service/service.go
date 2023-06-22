@@ -131,7 +131,7 @@ func (service *UserService) FindUser(userId uint64, ctx context.Context) (model.
 	return userToUpdate, nil
 }
 
-func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error {
+func (service *UserService) DeleteUser(userId uint64, tokenString string, ctx context.Context) error {
 	span := tracer.StartSpanFromContext(ctx, "deleteUserService")
 	defer span.Finish()
 
@@ -144,14 +144,14 @@ func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error
 
 	userIsHost := false
 	if userToDelete.Role == model.GUEST {
-		err := client.CheckReservations(userToDelete.ID, "guest")
+		err := client.CheckReservations(userToDelete.ID, "guest", tokenString)
 		if err != nil {
 			tracer.LogError(span, err)
 			return err
 		}
 	} else if userToDelete.Role == model.HOST {
 		userIsHost = true
-		err := client.CheckReservations(userToDelete.ID, "owner")
+		err := client.CheckReservations(userToDelete.ID, "owner", tokenString)
 		if err != nil {
 			tracer.LogError(span, err)
 			return err

@@ -202,7 +202,8 @@ func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = handler.Service.DeleteUser(userId, ctx)
+	tokenString := r.Header.Get("Authorization")
+	err = handler.Service.DeleteUser(userId, tokenString, ctx)
 
 	if err != nil {
 		status := http.StatusBadRequest
