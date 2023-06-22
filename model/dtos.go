@@ -7,19 +7,17 @@ import (
 )
 
 type UserDTO struct {
-	Id      uint   `json:"id"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
-	Surname string `json:"surname"`
-	Address string `json:"address"`
-	Username string `json:"username"`
-	OldPassword string `json:"oldPassword"`
-	NewPassword string `json:"newPassword"`
-	ReservationRequestNotification bool `json:"reservationRequestNotification"`
-	ReservationCanceledNotification bool `json:"reservationCanceledNotification"`
-	SelfReviewNotification bool `json:"selfReviewNotification"`
-	AccomodationReviewNotification bool `json:"accomodationReviewNotification"`
-	ReservationStatusChangedNotification bool `json:"reservationStatusChangedNotification"`
+	Id                                   uint   `json:"id"`
+	Email                                string `json:"email"`
+	Name                                 string `json:"name"`
+	Surname                              string `json:"surname"`
+	Address                              string `json:"address"`
+	Username                             string `json:"username"`
+	ReservationRequestNotification       bool   `json:"reservationRequestNotification"`
+	ReservationCanceledNotification      bool   `json:"reservationCanceledNotification"`
+	SelfReviewNotification               bool   `json:"selfReviewNotification"`
+	AccomodationReviewNotification       bool   `json:"accomodationReviewNotification"`
+	ReservationStatusChangedNotification bool   `json:"reservationStatusChangedNotification"`
 }
 
 func (user *UserDTO) ToUser() User {
@@ -27,18 +25,18 @@ func (user *UserDTO) ToUser() User {
 }
 
 type UserResponseDTO struct {
-	Id      uint   `json:"id"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
-	Surname string `json:"surname"`
-	Address string `json:"address"`
-	Username string `json:"username"`
-	Role UserRole `json:"role"`
-	ReservationRequestNotification bool `json:"reservationRequestNotification"`
-	ReservationCanceledNotification bool `json:"reservationCanceledNotification"`
-	SelfReviewNotification bool `json:"selfReviewNotification"`
-	AccomodationReviewNotification bool `json:"accomodationReviewNotification"`
-	ReservationStatusChangedNotification bool `json:"reservationStatusChangedNotification"`
+	Id                                   uint     `json:"id"`
+	Email                                string   `json:"email"`
+	Name                                 string   `json:"name"`
+	Surname                              string   `json:"surname"`
+	Address                              string   `json:"address"`
+	Username                             string   `json:"username"`
+	Role                                 UserRole `json:"role"`
+	ReservationRequestNotification       bool     `json:"reservationRequestNotification"`
+	ReservationCanceledNotification      bool     `json:"reservationCanceledNotification"`
+	SelfReviewNotification               bool     `json:"selfReviewNotification"`
+	AccomodationReviewNotification       bool     `json:"accomodationReviewNotification"`
+	ReservationStatusChangedNotification bool     `json:"reservationStatusChangedNotification"`
 }
 
 type Credentials struct {
@@ -47,9 +45,9 @@ type Credentials struct {
 }
 
 type Claims struct {
-	Email string `json:"email"`
-	Role UserRole `json:"role"`
-	Id uint `json:"id"`
+	Email string   `json:"email"`
+	Role  UserRole `json:"role"`
+	Id    uint     `json:"id"`
 	jwt.StandardClaims
 }
 
@@ -63,13 +61,13 @@ type LoginResponse struct {
 }
 
 type CreateUserRequest struct {
-	Username string `json:"username"`
-	Email   string `json:"email"`
-	Password string `json:"password"`
-	Name    string `json:"name"`
-	Surname string `json:"surname"`
-	Address string `json:"address"`
-	Role UserRole `json:"role"`
+	Username string   `json:"username"`
+	Email    string   `json:"email"`
+	Password string   `json:"password"`
+	Name     string   `json:"name"`
+	Surname  string   `json:"surname"`
+	Address  string   `json:"address"`
+	Role     UserRole `json:"role"`
 }
 
 func (user *CreateUserRequest) ToUser() User {
@@ -85,11 +83,17 @@ const (
 )
 
 type ReservationRequestDto struct {
-    Status               ReservationRequestStatus `json:"status"`
-    GuestID              uint                     `json:"guestID"`
-    AccommodationID      uint                     `json:"accommodationID"`
-    ReservationRequestID uint                     `json:"reservationRequestID"`
-    StartDate            time.Time                `json:"startDate"`
-    EndDate              time.Time                `json:"endDate"`
-    GuestNumber          uint                     `json:"guestNumber"`
+	Status               ReservationRequestStatus `json:"status"`
+	GuestID              uint                     `json:"guestID"`
+	AccommodationID      uint                     `json:"accommodationID"`
+	ReservationRequestID uint                     `json:"reservationRequestID"`
+	StartDate            time.Time                `json:"startDate"`
+	EndDate              time.Time                `json:"endDate"`
+	GuestNumber          uint                     `json:"guestNumber"`
+}
+
+type ChangePasswordDTO struct {
+	Id          uint   `json:"id"`
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
 }

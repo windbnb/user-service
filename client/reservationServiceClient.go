@@ -10,13 +10,16 @@ import (
 	"github.com/windbnb/user-service/util"
 )
 
-func CheckReservations(userId uint, role string) error {
+func CheckReservations(userId uint, role string, tokenString string) error {
 	if role != "owner" && role != "guest" {
 		return errors.New("invalid role specified")
 	}
 
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", util.BaseReservationServicePathRoundRobin.Next().Host+"/reservationRequest/" + role + "/"+strconv.FormatUint(uint64(userId), 10), nil)
+	reservationUrl, _ := util.GetReservationServicePathRoundRobin()
+	req, _ := http.NewRequest("GET", reservationUrl.Next().Host+"/api/reservationRequest/"+role+"/"+strconv.FormatUint(uint64(userId), 10), nil)
+
+	req.Header.Set("Authorization", tokenString)
 
 	response, err := client.Do(req)
 	if err != nil {

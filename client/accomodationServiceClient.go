@@ -9,13 +9,14 @@ import (
 )
 
 func DeleteAccomodationForHost(hostId uint) error {
-    client := &http.Client{}
-    req, _ := http.NewRequest("DELETE", util.BaseAccomodationServicePathRoundRobin.Next().Host + "/accomodation/delete-all/" + strconv.FormatUint(uint64(hostId), 10), nil)
+	client := &http.Client{}
+	accomodationUrl, _ := util.GetAccommodationServicePathRoundRobin()
+	req, _ := http.NewRequest("DELETE", accomodationUrl.Next().Host+"/api/accomodation/delete-all/"+strconv.FormatUint(uint64(hostId), 10), nil)
 
 	_, err := client.Do(req)
-    if err != nil {
-        return errors.New("accomodation service unreachable")
-    }
+	if err != nil {
+		return errors.New("accomodation service unreachable")
+	}
 
 	return nil
 }
