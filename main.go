@@ -48,7 +48,7 @@ func main() {
 
 	servicePath, servicePathFound := os.LookupEnv("SERVICE_PATH")
 	if !servicePathFound {
-		servicePath = "localhost:8081"
+		servicePath = "0.0.0.0:8081"
 	}
 
 	srv := &http.Server{Addr: servicePath, Handler: c.Handler(router)}

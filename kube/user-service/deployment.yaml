@@ -1,0 +1,33 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      name: user-service
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: milospp/windbnb-user-service
+          imagePullPolicy: Always
+          env:
+          - name: DATABASE_HOST
+            value: "db-service"
+          - name: DATABASE_USER
+            value: "postgres"
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: user-database-password
+                key: DATABASE_PASSWORD
+      restartPolicy: Always
