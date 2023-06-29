@@ -17,6 +17,7 @@ type IRepository interface {
 	SaveUser(user model.User, ctx context.Context) (model.User, error)
 	SaveUserDeletionEvent(userId uint64, ctx context.Context)
 	DeleteUser(userId uint64, ctx context.Context) error
+	FindUserByUsername(username string, ctx context.Context) model.User
 }
 
 type Repository struct {
@@ -106,4 +107,15 @@ func (r *Repository) DeleteUser(userId uint64, ctx context.Context) error {
 	r.Db.Delete(userToDelete)
 
 	return nil
+}
+
+func (r *Repository) FindUserByUsername(username string, ctx context.Context) model.User {
+	span := tracer.StartSpanFromContext(ctx, "findUserByUsernameRepository")
+	defer span.Finish()
+
+	var user model.User
+
+	r.Db.Where("username = ?", username).First(&user)
+
+	return user
 }

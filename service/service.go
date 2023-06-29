@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"net/mail"
 	"time"
@@ -13,7 +15,19 @@ import (
 	"github.com/windbnb/user-service/tracer"
 )
 
-var jwtKey = []byte("z7031Q8Qy9zVO-T2o7lsFIZSrd05hH0PaeaWIBvLh9s")
+var jwtKey []byte
+
+func InitJWTKey() {
+	keyLength := 32
+
+	randomString := make([]byte, keyLength)
+	_, err := rand.Read(randomString)
+	if err != nil {
+		panic(err)
+	}
+
+	jwtKey = []byte(base64.RawURLEncoding.EncodeToString(randomString))
+}
 
 type UserService struct {
 	Repo repository.IRepository
@@ -51,6 +65,15 @@ func (service *UserService) CreateUser(user model.User, ctx context.Context) (mo
 		return user, errors.New("email format is not valid")
 	}
 
+	if user.Role == model.GUEST {
+		user.ReservationStatusChangedNotification = true
+	} else {
+		user.SelfReviewNotification = true
+		user.AccomodationReviewNotification = true
+		user.ReservationRequestNotification = true
+		user.ReservationCanceledNotification = true
+	}
+
 	ctx = tracer.ContextWithSpan(context.Background(), span)
 	createdUser, err := service.Repo.CreateUser(user, ctx)
 
@@ -67,7 +90,7 @@ func (service *UserService) AuthenticateUser(tokenString string, role model.User
 	defer span.Finish()
 
 	claims := model.Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, &claims, 
+	token, err := jwt.ParseWithClaims(tokenString, &claims,
 		func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
@@ -108,7 +131,7 @@ func (service *UserService) FindUser(userId uint64, ctx context.Context) (model.
 	return userToUpdate, nil
 }
 
-func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error {
+func (service *UserService) DeleteUser(userId uint64, tokenString string, ctx context.Context) error {
 	span := tracer.StartSpanFromContext(ctx, "deleteUserService")
 	defer span.Finish()
 
@@ -121,14 +144,14 @@ func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error
 
 	userIsHost := false
 	if userToDelete.Role == model.GUEST {
-		err := client.CheckReservations(userToDelete.ID, "guest")
+		err := client.CheckReservations(userToDelete.ID, "guest", tokenString)
 		if err != nil {
 			tracer.LogError(span, err)
 			return err
 		}
 	} else if userToDelete.Role == model.HOST {
 		userIsHost = true
-		err := client.CheckReservations(userToDelete.ID, "owner")
+		err := client.CheckReservations(userToDelete.ID, "owner", tokenString)
 		if err != nil {
 			tracer.LogError(span, err)
 			return err
@@ -152,8 +175,55 @@ func (service *UserService) DeleteUser(userId uint64, ctx context.Context) error
 	return nil
 }
 
-func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) error {
+func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx context.Context) (model.User, error) {
 	span := tracer.StartSpanFromContext(ctx, "editUserService")
+	defer span.Finish()
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	userToUpdate, err := service.Repo.FindUserById(userId, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return model.User{}, errors.New("user with given id does not exist")
+	}
+
+	userToUpdate.Name = user.Name
+	userToUpdate.Surname = user.Surname
+	userToUpdate.Email = user.Email
+	userToUpdate.Address = user.Address
+
+	if userToUpdate.Role == model.GUEST {
+		userToUpdate.ReservationStatusChangedNotification = user.ReservationStatusChangedNotification
+	} else {
+		userToUpdate.SelfReviewNotification = user.SelfReviewNotification
+		userToUpdate.AccomodationReviewNotification = user.AccomodationReviewNotification
+		userToUpdate.ReservationRequestNotification = user.ReservationRequestNotification
+		userToUpdate.ReservationCanceledNotification = user.ReservationCanceledNotification
+	}
+
+	userWithSameUsername := service.Repo.FindUserByUsername(user.Username, ctx)
+
+	if userWithSameUsername.ID != 0 && user.Username != userToUpdate.Username {
+		err := errors.New("already exist user with the same username")
+		tracer.LogError(span, err)
+		return model.User{}, err
+	}
+
+	userToUpdate.Username = user.Username
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	savedUser, err := service.Repo.SaveUser(userToUpdate, ctx)
+
+	if err != nil {
+		tracer.LogError(span, err)
+		return model.User{}, errors.New("error while saving user")
+	}
+
+	return savedUser, nil
+}
+
+func (service *UserService) ChangePassword(user model.ChangePasswordDTO, userId uint64, ctx context.Context) error {
+	span := tracer.StartSpanFromContext(ctx, "changePasswordService")
 	defer span.Finish()
 
 	ctx = tracer.ContextWithSpan(context.Background(), span)
@@ -163,11 +233,6 @@ func (service *UserService) EditUser(user model.UserDTO, userId uint64, ctx cont
 		tracer.LogError(span, err)
 		return errors.New("user with given id does not exist")
 	}
-
-	userToUpdate.Name = user.Name
-	userToUpdate.Surname = user.Surname
-	userToUpdate.Email = user.Email
-	userToUpdate.Address = user.Address
 
 	if user.OldPassword != "" {
 		if user.OldPassword != userToUpdate.Password {

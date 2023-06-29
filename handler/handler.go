@@ -19,8 +19,16 @@ import (
 
 type Handler struct {
 	Service *service.UserService
-	Tracer opentracing.Tracer
-	Closer io.Closer
+	Tracer  opentracing.Tracer
+	Closer  io.Closer
+}
+
+func (handler *Handler) Healthcheck(w http.ResponseWriter, _ *http.Request) {
+	_, _ = fmt.Fprintln(w, "Healthy!")
+}
+
+func (handler *Handler) Ready(w http.ResponseWriter, _ *http.Request) {
+	_, _ = fmt.Fprintln(w, "Ready!")
 }
 
 func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -94,15 +102,16 @@ func (handler *Handler) EditUser(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&userDTO)
 
 	ctx = tracer.ContextWithSpan(context.Background(), span)
-	err = handler.Service.EditUser(userDTO, userId, ctx)
+	editedUser, err := handler.Service.EditUser(userDTO, userId, ctx)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusBadRequest})
 		return
 	}
-	
-	w.WriteHeader(http.StatusNoContent)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(editedUser.ToDTO())
 }
 
 func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +128,7 @@ func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenString := strings.Split(authHeader[0], " ")[1]
-	
+  
 	ctx := tracer.ContextWithSpan(context.Background(), span)
 	user, err := handler.Service.AuthenticateUser(tokenString, model.GUEST, true, ctx)
 
@@ -146,10 +155,10 @@ func (handler *Handler) AuthoriseHost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenString := strings.Split(authHeader[0], " ")[1]
-	
+
 	ctx := tracer.ContextWithSpan(context.Background(), span)
 	user, err := handler.Service.AuthenticateUser(tokenString, model.HOST, true, ctx)
-	
+
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -201,7 +210,8 @@ func (handler *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = handler.Service.DeleteUser(userId, ctx)
+	tokenString := r.Header.Get("Authorization")
+	err = handler.Service.DeleteUser(userId, tokenString, ctx)
 
 	if err != nil {
 		status := http.StatusBadRequest
@@ -223,7 +233,7 @@ func (handler *Handler) authenticateAnyUser(r *http.Request, userId uint64, ctx 
 	}
 
 	tokenString := strings.Split(authHeader[0], " ")[1]
-	
+
 	user, err := handler.Service.AuthenticateUser(tokenString, model.HOST, false, ctx)
 	if err != nil {
 		return errors.New("Unauthorised")
@@ -234,4 +244,38 @@ func (handler *Handler) authenticateAnyUser(r *http.Request, userId uint64, ctx 
 	}
 
 	return nil
+}
+
+func (handler *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	span := tracer.StartSpanFromRequest("changePasswordHandler", handler.Tracer, r)
+	defer span.Finish()
+	span.LogFields(
+		tracer.LogString("handler", fmt.Sprintf("handling change password at %s\n", r.URL.Path)),
+	)
+
+	params := mux.Vars(r)
+	userId, _ := strconv.ParseUint(params["id"], 10, 32)
+
+	ctx := tracer.ContextWithSpan(context.Background(), span)
+	err := handler.authenticateAnyUser(r, userId, ctx)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusUnauthorized})
+		return
+	}
+
+	var changePasswordDTO model.ChangePasswordDTO
+	json.NewDecoder(r.Body).Decode(&changePasswordDTO)
+
+	ctx = tracer.ContextWithSpan(context.Background(), span)
+	err = handler.Service.ChangePassword(changePasswordDTO, userId, ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(model.ErrorResponse{Message: err.Error(), StatusCode: http.StatusBadRequest})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
