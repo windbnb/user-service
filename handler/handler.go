@@ -128,7 +128,7 @@ func (handler *Handler) AuthoriseGuest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenString := strings.Split(authHeader[0], " ")[1]
-
+  
 	ctx := tracer.ContextWithSpan(context.Background(), span)
 	user, err := handler.Service.AuthenticateUser(tokenString, model.GUEST, true, ctx)
 
